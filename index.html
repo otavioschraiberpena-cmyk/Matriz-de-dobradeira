@@ -223,6 +223,10 @@ function zoomImage(btn){const d=document.getElementById('zoom');d.querySelector(
  function updateCounts(){$$('.catalog-section',main).forEach(s=>{const n=$$('tbody tr:not(.add-tool-row)',s).length;const c=$('.count',s);if(c)c.textContent=n+' registros'});const n=$$('tbody tr:not(.add-tool-row)',main).length;$$('footer b').forEach(b=>{if(b.textContent.includes('registros catalogados'))b.textContent=n+' registros catalogados'})}
  function esc(v){const d=document.createElement('div');d.textContent=v;return d.innerHTML}
  $('#saveSite').onclick=()=>{const clone=document.documentElement.cloneNode(true);clone.querySelectorAll('dialog[open]').forEach(x=>x.removeAttribute('open'));const blob=new Blob(['<!doctype html>\n'+clone.outerHTML],{type:'text/html;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='catalogo_ferramentas_atualizado.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+ window.catalogDecorate=decorate;
+ window.catalogBuildSidebar=buildSidebar;
+ window.catalogSyncEditor=()=>{decorate();buildSidebar();syncMode()};
+ window.addEventListener('catalog-data-applied',window.catalogSyncEditor);
  decorate();buildSidebar();document.body.classList.add('sidebar-open');
 })();
 </script>
@@ -285,7 +289,8 @@ window.syncCatalogIndexes=function(){
      main.append(sec);
    });
    const ids=new Set(data.map(x=>x.id));main.querySelectorAll('.catalog-section').forEach(sec=>{if(!ids.has(sec.id))sec.remove()});if(empty)main.prepend(empty);
-   if(typeof decorate==='function')decorate();if(typeof buildSidebar==='function')buildSidebar();
+   if(window.catalogSyncEditor)window.catalogSyncEditor();
+   window.dispatchEvent(new Event('catalog-data-applied'));
    lastSaved=JSON.stringify(serialize()); applying=false;
    if(window.syncCatalogIndexes)window.syncCatalogIndexes();
    requestAnimationFrame(()=>window.syncCatalogIndexes&&window.syncCatalogIndexes());
