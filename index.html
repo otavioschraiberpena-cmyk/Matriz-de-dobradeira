@@ -307,4 +307,139 @@ window.syncCatalogIndexes=function(){
   if(el) el.textContent=new Intl.DateTimeFormat('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date());
 })();
 </script>
+
+<style id="catalog-home-styles">
+body.home-mode{overflow-y:auto;background:#eef0f2}
+body.home-mode> :not(#catalogHome):not(script):not(style){display:none!important}
+#catalogHome{display:none;min-height:100vh;background:#eef0f2;color:#202124;font-family:Arial,Helvetica,sans-serif}
+body.home-mode #catalogHome{display:block}
+.catalog-home-top{height:65px;background:#fff;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;padding:0 6.05%;}
+.catalog-home-logo{width:390px;max-width:46vw;height:52px;object-fit:contain;object-position:left center}
+.catalog-home-area{font-size:12px;color:#424242;margin-right:0.2%}
+.catalog-home-main{padding:58px 12.15% 48px;min-height:calc(100vh - 65px)}
+.catalog-home-kicker{margin:0 0 10px;color:#f57c00;font-size:12px;line-height:1.2;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}
+.catalog-home-title{margin:0;color:#202124;font-size:54px;line-height:1.12;font-weight:700;letter-spacing:-1.1px}
+.catalog-home-subtitle{margin:13px 0 36px;color:#5f6368;font-size:16px;line-height:1.5}
+.catalog-home-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px;max-width:1010px}
+.catalog-home-card{position:relative;min-height:225px;padding:61px 22px 20px;background:#fff;border:0;border-top:6px solid #f57c00;border-radius:11px;box-shadow:0 13px 28px rgba(0,0,0,.07);text-align:left;color:#202124;font:inherit;transition:transform .16s ease,box-shadow .16s ease;overflow:hidden}
+.catalog-home-card.available{cursor:pointer}
+.catalog-home-card.available:hover{transform:translateY(-3px);box-shadow:0 16px 33px rgba(0,0,0,.12)}
+.catalog-home-arrow{position:absolute;right:20px;top:23px;color:#f57c00;font-size:27px;font-weight:300;line-height:1}
+.catalog-home-card h2{margin:7px 0 7px;font-size:21px;line-height:1.05;font-weight:700;color:#111}
+.catalog-home-card p{margin:0 0 12px;color:#60646b;font-size:14px;line-height:1.4}
+.catalog-home-status{position:absolute;left:22px;bottom:20px;color:#9a6500;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase}
+.catalog-home-card.available .catalog-home-status{color:#08783f}
+@media(max-width:1000px){.catalog-home-main{padding:45px 6%}.catalog-home-cards{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.catalog-home-title{font-size:44px}}
+@media(max-width:580px){.catalog-home-top{padding:0 18px}.catalog-home-logo{width:250px}.catalog-home-area{font-size:10px}.catalog-home-main{padding:36px 20px}.catalog-home-title{font-size:38px}.catalog-home-cards{grid-template-columns:1fr}.catalog-home-card{min-height:190px}}
+
+.catalog-back-home{position:fixed;left:18px;bottom:18px;z-index:30;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:8px;background:#232323;color:#fff;padding:12px 16px;font:700 13px Arial,Helvetica,sans-serif;box-shadow:0 8px 22px rgba(0,0,0,.22);cursor:pointer;transition:background .15s ease,transform .15s ease}
+.catalog-back-home:hover{background:#f57c00;transform:translateY(-2px)}
+body.home-mode .catalog-back-home{display:none!important}
+@media print{.catalog-back-home{display:none!important}}
+
+/* Ajuste de espacamento para impedir sobreposicao dos textos */
+.catalog-home-main{padding-left:10%;padding-right:10%}
+.catalog-home-cards{grid-template-columns:repeat(5,minmax(170px,1fr));gap:18px;max-width:1040px}
+.catalog-home-card{min-width:0;min-height:260px;padding:65px 21px 58px;overflow:hidden}
+.catalog-home-card h2{margin:7px 0 8px;font-size:20px;line-height:1.12;overflow-wrap:break-word;word-break:normal;hyphens:auto}
+.catalog-home-card p{margin:0;color:#60646b;font-size:14px;line-height:1.42;overflow-wrap:break-word}
+.catalog-home-status{left:21px;right:15px;bottom:20px;line-height:1.15;overflow-wrap:break-word}
+@media(max-width:1180px){.catalog-home-main{padding-left:6%;padding-right:6%}.catalog-home-cards{grid-template-columns:repeat(3,minmax(190px,1fr));max-width:none}}
+@media(max-width:760px){.catalog-home-cards{grid-template-columns:repeat(2,minmax(180px,1fr))}}
+@media(max-width:500px){.catalog-home-cards{grid-template-columns:1fr}.catalog-home-card{min-height:225px}}
+
+.catalog-home-card.catalog-in-progress{cursor:pointer}
+.catalog-home-card.catalog-in-progress:hover{transform:translateY(-3px);box-shadow:0 16px 33px rgba(0,0,0,.12)}
+#catalogProgressView{display:none;min-height:100vh;background:#eef0f2;color:#202124;font-family:Arial,Helvetica,sans-serif}
+body.progress-mode> :not(#catalogProgressView):not(script):not(style){display:none!important}
+body.progress-mode #catalogProgressView{display:block}
+.catalog-progress-main{min-height:calc(100vh - 65px);display:flex;align-items:center;justify-content:center;padding:50px 20px}
+.catalog-progress-content{text-align:center;max-width:620px}
+.catalog-progress-mark{display:flex;align-items:center;justify-content:center;width:72px;height:72px;margin:0 auto 24px;border-radius:50%;background:#fff3e6;color:#f57c00;font-size:38px;font-weight:800}
+.catalog-progress-content h1{margin:0 0 14px;color:#202124;font-size:46px;line-height:1.15}
+.catalog-progress-content p{margin:0 0 30px;color:#5f6368;font-size:19px;line-height:1.5}
+.catalog-progress-return{border:0;border-radius:6px;background:#f57c00;color:#fff;padding:13px 22px;font-size:14px;font-weight:700;cursor:pointer}
+.catalog-progress-return:hover{background:#d96500}
+@media(max-width:580px){.catalog-progress-content h1{font-size:34px}.catalog-progress-content p{font-size:17px}}
+
+/* A tela inicial e a tela de aviso sempre ocupam toda a largura, mesmo se o script do catálogo ativar a barra lateral ao carregar. */
+body.home-mode,body.progress-mode{padding-left:0!important}
+body.home-mode #catalogHome,body.progress-mode #catalogProgressView{width:100%;max-width:none;margin-left:0}
+body.home-mode .catalog-home-top,body.progress-mode .catalog-home-top{width:100%}
+</style>
+<button class="catalog-back-home" id="backToCatalogHome" type="button" aria-label="Voltar para a tela inicial">← Voltar à tela inicial</button>
+<section id="catalogHome" aria-label="Central de consulta de catálogos">
+  <header class="catalog-home-top">
+    <img class="catalog-home-logo" id="catalogHomeLogo" alt="Marcopolo">
+    <div class="catalog-home-area">Engenharia de Processos</div>
+  </header>
+  <main class="catalog-home-main">
+    <p class="catalog-home-kicker">Central de consulta</p>
+    <h1 class="catalog-home-title">Catálogos de ferramentas</h1>
+    <p class="catalog-home-subtitle">Selecione a máquina para acessar o catálogo de ferramentas correspondente.</p>
+    <div class="catalog-home-cards">
+      <button class="catalog-home-card available" id="openBendingCatalog" type="button"><span class="catalog-home-arrow">→</span><h2>Dobradeira</h2><p>Acesse o catálogo completo de<br>ferramentas de dobra.</p><span class="catalog-home-status">Catálogo<br>disponível</span></button>
+      <article class="catalog-home-card catalog-in-progress" role="button" tabindex="0"><span class="catalog-home-arrow">→</span><h2>Puncionadeira</h2><p>Ferramentas para<br>operações de<br>puncionamento.</p><span class="catalog-home-status">Em andamento</span></article>
+      <article class="catalog-home-card catalog-in-progress" role="button" tabindex="0"><span class="catalog-home-arrow">→</span><h2>Calandra</h2><p>Ferramentas para<br>processos de<br>calandragem.</p><span class="catalog-home-status">Em andamento</span></article>
+      <article class="catalog-home-card catalog-in-progress" role="button" tabindex="0"><span class="catalog-home-arrow">→</span><h2>Prensa de<br>estampagem</h2><p>Ferramentas para<br>operações de<br>estampagem.</p><span class="catalog-home-status">Em andamento</span></article>
+      <article class="catalog-home-card catalog-in-progress" role="button" tabindex="0"><span class="catalog-home-arrow">→</span><h2>Curvadora</h2><p>Ferramentas para<br>processos de<br>curvamento.</p><span class="catalog-home-status">Em andamento</span></article>
+    </div>
+  </main>
+</section>
+<section id="catalogProgressView" aria-label="Catálogo em andamento">
+  <header class="catalog-home-top">
+    <img class="catalog-home-logo" id="catalogProgressLogo" alt="Marcopolo">
+    <div class="catalog-home-area">Engenharia de Processos</div>
+  </header>
+  <main class="catalog-progress-main">
+    <div class="catalog-progress-content">
+      <div class="catalog-progress-mark">!</div>
+      <h1>Catálogo em andamento</h1>
+      <p>Espere até o catálogo ficar disponível.</p>
+      <button class="catalog-progress-return" id="returnFromProgress" type="button">Voltar à tela inicial</button>
+    </div>
+  </main>
+</section>
+<script id="catalog-home-script">
+(function(){
+  function initHome(){
+    var sourceLogo=document.querySelector('.brand-logo');
+    var homeLogo=document.getElementById('catalogHomeLogo');
+    if(sourceLogo&&homeLogo) homeLogo.src=sourceLogo.currentSrc||sourceLogo.src;
+    var progressLogo=document.getElementById('catalogProgressLogo');
+    if(sourceLogo&&progressLogo) progressLogo.src=sourceLogo.currentSrc||sourceLogo.src;
+    document.body.classList.remove('sidebar-open');
+    document.body.classList.add('home-mode');
+    document.getElementById('openBendingCatalog').addEventListener('click',function(){
+      document.body.classList.remove('home-mode');
+      document.body.classList.remove('sidebar-open');
+      window.scrollTo(0,0);
+    });
+
+    function showProgressView(){
+      document.body.classList.remove('home-mode');
+      document.body.classList.add('progress-mode');
+      window.scrollTo(0,0);
+    }
+    function returnHome(){
+      document.body.classList.remove('progress-mode');
+      document.body.classList.add('home-mode');
+      window.scrollTo(0,0);
+    }
+    document.querySelectorAll('.catalog-in-progress').forEach(function(card){
+      card.addEventListener('click',showProgressView);
+      card.addEventListener('keydown',function(event){
+        if(event.key==='Enter'||event.key===' '){event.preventDefault();showProgressView();}
+      });
+    });
+    document.getElementById('returnFromProgress').addEventListener('click',returnHome);
+
+    document.getElementById('backToCatalogHome').addEventListener('click',function(){
+      document.body.classList.add('home-mode');
+      window.scrollTo(0,0);
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initHome); else initHome();
+})();
+</script>
 </body></html>
