@@ -302,7 +302,7 @@ window.syncCatalogIndexes=function(){
  }
  function serialize(){return [...main.querySelectorAll('.catalog-section')].map((sec,order)=>{const table=sec.querySelector('table');if(!table)return null;const columns=[...table.querySelectorAll('thead th:not(.admin-actions-head)')].map(x=>x.textContent.trim());const rows=[...table.querySelectorAll('tbody tr:not(.add-tool-row)')].map(tr=>[...tr.querySelectorAll('td:not(.row-actions)')].map(td=>td.textContent.trim()));const images=[...sec.querySelectorAll('.drawing-grid img')].map(img=>({src:img.src,alt:img.alt||'',name:img.dataset.filename||''}));return{id:sec.id,title:sec.querySelector('h2')?.textContent.trim()||'Sem título',category:sec.dataset.category||'',columns,rows,images,order}}).filter(Boolean)}
  function sectionFrom(item){const sec=document.createElement('section');sec.className='catalog-section';sec.id=item.id||('sec-'+Date.now());sec.dataset.category=item.category||item.title;sec.innerHTML='<div class="section-head"><div><span class="eyebrow">Família de ferramenta</span><h2></h2></div><span class="count"></span></div><div class="drawing-grid"></div><div class="table-wrap"><table><thead><tr></tr></thead><tbody></tbody></table></div>';sec.querySelector('h2').textContent=item.title||'Sem título';return sec}
- function apply(data){if(!Array.isArray(data))return;applying=true;const empty=main.querySelector('.empty-state');data.sort((a,b)=>(a.order||0)-(b.order||0)).forEach(item=>{let sec=document.getElementById(item.id);if(!sec){sec=sectionFrom(item);main.append(sec)}sec.dataset.category=item.category||'';sec.querySelector('h2').textContent=item.title||'Sem título';const table=sec.querySelector('table'),head=table.querySelector('thead tr'),body=table.querySelector('tbody');head.innerHTML='';(item.columns||[]).forEach(c=>{const th=document.createElement('th');th.textContent=c;head.append(th)});body.innerHTML='';(item.rows||[]).forEach(row=>{const tr=document.createElement('tr');(item.columns||[]).forEach((_,i)=>{const td=document.createElement('td');td.textContent=row[i]??'';tr.append(td)});body.append(tr)});let grid=sec.querySelector('.drawing-grid');if(!grid){grid=document.createElement('div');grid.className='drawing-grid';const wrap=sec.querySelector('.table-wrap');if(wrap)sec.insertBefore(grid,wrap);else sec.append(grid)}grid.innerHTML='';(item.images||[]).forEach(im=>{const b=document.createElement('button');b.type='button';b.className='drawing';b.onclick=function(){zoomImage(this)};const image=document.createElement('img');image.loading='lazy';image.src=im.src;image.alt=im.alt||'';image.dataset.filename=im.name||'';b.append(image);grid.append(b)});sec.querySelector('.count').textContent=(item.rows||[]).length+' registros'});const ids=new Set(data.map(x=>x.id));main.querySelectorAll('.catalog-section').forEach(sec=>{if(!ids.has(sec.id))sec.remove()});if(empty)main.prepend(empty);if(window.catalogSyncEditor)window.catalogSyncEditor();window.dispatchEvent(new Event('catalog-data-applied'));lastSaved=JSON.stringify(serialize());dirty=false;applying=false}
+ function apply(data){if(!Array.isArray(data))return;applying=true;const empty=main.querySelector('.empty-state');data.sort((a,b)=>(a.order||0)-(b.order||0)).forEach(item=>{let sec=document.getElementById(item.id);if(!sec){sec=sectionFrom(item);main.append(sec)}sec.dataset.category=item.category||'';sec.querySelector('h2').textContent=item.title||'Sem título';const table=sec.querySelector('table'),head=table.querySelector('thead tr'),body=table.querySelector('tbody');head.innerHTML='';(item.columns||[]).forEach(c=>{const th=document.createElement('th');th.textContent=c;head.append(th)});body.innerHTML='';(item.rows||[]).forEach(row=>{const tr=document.createElement('tr');(item.columns||[]).forEach((_,i)=>{const td=document.createElement('td');td.textContent=row[i]??'';tr.append(td)});body.append(tr)});let grid=sec.querySelector('.drawing-grid');if(!grid){grid=document.createElement('div');grid.className='drawing-grid';const wrap=sec.querySelector('.table-wrap');if(wrap)sec.insertBefore(grid,wrap);else sec.append(grid)}grid.innerHTML='';(item.images||[]).forEach(im=>{const b=document.createElement('button');b.type='button';b.className='drawing';b.onclick=function(){zoomImage(this)};const image=document.createElement('img');image.loading='lazy';image.src=im.src;image.alt=im.alt||'';image.dataset.filename=im.name||'';b.append(image);grid.append(b)});sec.querySelector('.count').textContent=(item.rows||[]).length+' registros';main.append(sec)});const ids=new Set(data.map(x=>x.id));main.querySelectorAll('.catalog-section').forEach(sec=>{if(!ids.has(sec.id))sec.remove()});if(empty)main.prepend(empty);if(window.catalogSyncEditor)window.catalogSyncEditor();window.dispatchEvent(new Event('catalog-data-applied'));lastSaved=JSON.stringify(serialize());dirty=false;applying=false}
  async function load(){if(!db||dirty||saving)return;setStatus('Sincronizando...');try{const {data,error}=await timeout(db.from(TABLE).select('dados,revisao,atualizado_em').eq('id',ROW).maybeSingle(),15000);if(error)throw error;if(Array.isArray(data?.dados)&&data.dados.length>0){lastRevision=Number(data.revisao||0);try{apply(data.dados);setStatus('Sincronizado')}catch(applyError){applying=false;throw applyError}}else{lastRevision=Number(data?.revisao||0);lastSaved='';setStatus('Banco V2 vazio. Dados locais preservados. Clique em Salvar no banco.')}}catch(e){setStatus('Sem sincronização: '+e.message,true);console.error(e)}}
  async function save(force=false){if(!db||applying||saving||!sessionStorage.getItem('catalogo_admin'))return false;const before=JSON.stringify(serialize());if(!force&&!dirty&&before===lastSaved)return true;saving=true;dirty=true;try{await externalizeImages();const dados=serialize(),json=JSON.stringify(dados),next=lastRevision+1;setStatus('Salvando dados...');const payload={id:ROW,dados,revisao:next,atualizado_em:new Date().toISOString(),atualizado_por:sessionStorage.getItem('catalogo_admin')};const {data,error}=await timeout(db.from(TABLE).upsert(payload,{onConflict:'id'}).select('revisao').single(),30000);if(error)throw error;lastRevision=Number(data.revisao||next);lastSaved=json;dirty=false;setStatus('Salvo no banco');return true}catch(e){dirty=false;setStatus('Erro: '+e.message,true);alert('Não foi possível salvar no banco.\n\n'+e.message);return false}finally{saving=false}}
  function schedule(){if(applying||saving||!sessionStorage.getItem('catalogo_admin'))return;dirty=true;clearTimeout(timer);timer=setTimeout(()=>save(false),1200)}
@@ -608,13 +608,11 @@ body.home-mode .home-admin-login{display:inline-flex}
 })();
 </script>
 
-<script id="persistence-fix-v3">
+<script id="home-persistence-fix">
 (() => {
-  const DB = window.catalogSupabase;
-  const TABLE = 'catalogo_sync_v2';
-  const HOME_ROW = 'catalogo-home';
-  const HOME_KEY = 'catalogo_home_cards_v1';
-  if (!DB) { console.error('Persistence fix: Supabase client unavailable.'); return; }
+  const KEY = 'catalogo_home_cards_v1';
+  const cards = document.querySelector('.catalog-home-cards');
+  if (!cards) return;
 
   const cardData = card => ({
     title: card.querySelector('h2')?.textContent.trim() || '',
@@ -622,83 +620,31 @@ body.home-mode .home-admin-login{display:inline-flex}
     image: card.querySelector('.catalog-machine-image')?.src || '',
     available: card.classList.contains('available')
   });
-  const homeCards = () => document.querySelector('.catalog-home-cards');
-  const serializeHome = () => [...(homeCards()?.children || [])].map(cardData);
-  let applyingHome = false, homeTimer = null, lastHome = '';
+  const serialize = () => [...cards.children].map(cardData);
+  let timer = null;
 
-  async function saveHomeToDatabase() {
-    if (applyingHome || !sessionStorage.getItem('catalogo_admin')) return;
-    const data = serializeHome();
-    const json = JSON.stringify(data);
-    if (json === lastHome) return;
-    const payload = {
-      id: HOME_ROW,
-      dados: data,
-      revisao: Date.now(),
-      atualizado_em: new Date().toISOString(),
-      atualizado_por: sessionStorage.getItem('catalogo_admin')
-    };
-    const { error } = await DB.from(TABLE).upsert(payload, { onConflict: 'id' });
-    if (error) {
-      console.error('Erro ao salvar tela inicial:', error);
-      alert('A alteração da tela inicial não foi salva no banco.\n\n' + error.message);
-      return;
+  const persist = () => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(serialize()));
+    } catch (error) {
+      console.error('Falha ao salvar a tela inicial localmente:', error);
     }
-    lastHome = json;
-    localStorage.setItem(HOME_KEY, json);
-  }
+  };
 
-  async function loadHomeFromDatabase() {
-    const { data, error } = await DB.from(TABLE).select('dados').eq('id', HOME_ROW).maybeSingle();
-    if (error) { console.error('Erro ao carregar tela inicial:', error); return; }
-    const remote = Array.isArray(data?.dados) ? data.dados : null;
-    if (!remote?.length) {
-      if (sessionStorage.getItem('catalogo_admin')) await saveHomeToDatabase();
-      return;
-    }
-    const json = JSON.stringify(remote);
-    lastHome = json;
-    if (localStorage.getItem(HOME_KEY) !== json) {
-      applyingHome = true;
-      localStorage.setItem(HOME_KEY, json);
-      location.reload();
-    }
-  }
-
-  function watchHome() {
-    const cards = homeCards();
-    if (!cards) return;
-    new MutationObserver(() => {
-      if (applyingHome || !sessionStorage.getItem('catalogo_admin')) return;
-      clearTimeout(homeTimer);
-      homeTimer = setTimeout(saveHomeToDatabase, 350);
-    }).observe(cards, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['src', 'class'] });
-  }
-
-  // A ordem das familias muda os elementos diretamente dentro de <main>.
-  // Forca o sincronizador original a gravar assim que a movimentacao terminar.
-  function watchFamilyOrder() {
-    const main = document.querySelector('body > main');
-    const saveButton = document.getElementById('saveSite');
-    if (!main || !saveButton) return;
-    let ready = false, timer = null;
-    setTimeout(() => { ready = true; }, 2500);
-    new MutationObserver(mutations => {
-      if (!ready || !sessionStorage.getItem('catalogo_admin')) return;
-      const reordered = mutations.some(m => m.type === 'childList' &&
-        ([...m.addedNodes, ...m.removedNodes].some(n => n.nodeType === 1 && n.classList?.contains('catalog-section'))));
-      if (!reordered) return;
-      clearTimeout(timer);
-      timer = setTimeout(() => saveButton.click(), 250);
-    }).observe(main, { childList: true });
-  }
-
-  window.addEventListener('beforeunload', () => {
-    if (sessionStorage.getItem('catalogo_admin')) localStorage.setItem(HOME_KEY, JSON.stringify(serializeHome()));
+  new MutationObserver(() => {
+    if (!sessionStorage.getItem('catalogo_admin')) return;
+    clearTimeout(timer);
+    timer = setTimeout(persist, 120);
+  }).observe(cards, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['src', 'class']
   });
 
-  const start = () => { watchHome(); watchFamilyOrder(); loadHomeFromDatabase(); };
-  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start();
+  window.addEventListener('beforeunload', persist);
+  window.addEventListener('pagehide', persist);
 })();
 </script>
 
